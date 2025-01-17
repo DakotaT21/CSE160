@@ -4,6 +4,7 @@ class Triangle{
     this.position = [0.0, 0.0, 0.0];
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.size = 5.0;
+    this.vertices = [];
   }
 
 
@@ -20,10 +21,15 @@ class Triangle{
     // Pass the size of a point to u_Size variable
     gl.uniform1f(u_Size, size);
   
-    // Draw
-    var d = this.size/200.0;
-    drawTriangle([xy[0], xy[1], xy[0] + d, xy[1], xy[0], xy[1] + d]);
-  }  
+     // Draw the triangle using custom vertices if provided
+     if (this.vertices.length === 6) {
+      drawTriangle(this.vertices); // Use the provided vertices
+    } else {
+      // Calculate default vertices based on position and size
+      const d = this.size / 200.0;
+      drawTriangle([this.position[0], this.position[1], this.position[0] + d, this.position[1], this.position[0], this.position[1] + d]);
+    }
+  }
 }
 
 function drawTriangle(vertices) {

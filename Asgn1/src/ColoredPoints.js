@@ -98,6 +98,8 @@ function addActionsforHtmlUI() {
   document.getElementById('sizeSlide').addEventListener('mouseup', function() {g_selectedSize = this.value;});
   document.getElementById('segSlide').addEventListener('mouseup', function() {g_selectedSegments = this.value;});
 
+  document.getElementById('recreateDrawing').addEventListener('click', function () {drawReferenceTriangles();});
+
 }
 
 function main() {
@@ -182,3 +184,58 @@ function sendTexttoHTML(text, htmlID) {
   }
   htmlElm.innerHTML = text;
 }
+
+
+
+// Reference Triangle Data
+const referenceTriangles = [
+  // Solid Red Cap (5 Triangles)
+  { vertices: [0.0, 0.4, -0.4, 0.2, -0.2, 0.4], color: [1.0, 0.0, 0.0, 1.0] }, // Triangle 1
+  { vertices: [0.0, 0.4, -0.2, 0.4, 0.2, 0.4], color: [1.0, 0.0, 0.0, 1.0] }, // Triangle 2
+  { vertices: [0.0, 0.4, 0.2, 0.4, 0.4, 0.2], color: [1.0, 0.0, 0.0, 1.0] }, // Triangle 3
+  { vertices: [-0.4, 0.2, -0.2, 0.2, -0.2, 0.4], color: [1.0, 0.0, 0.0, 1.0] }, // Triangle 4
+  { vertices: [0.4, 0.2, 0.2, 0.2, 0.2, 0.4], color: [1.0, 0.0, 0.0, 1.0] },  // Triangle 5
+
+  // White 6-Sided Circle (6 Triangles)
+  { vertices: [0.0, 0.3, -0.1, 0.2, 0.1, 0.2], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 6
+  { vertices: [0.0, 0.3, 0.1, 0.2, 0.15, 0.0], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 7
+  { vertices: [0.0, 0.3, 0.15, 0.0, 0.1, -0.2], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 8
+  { vertices: [0.0, 0.3, 0.1, -0.2, -0.1, -0.2], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 9
+  { vertices: [0.0, 0.3, -0.1, -0.2, -0.15, 0.0], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 10
+  { vertices: [0.0, 0.3, -0.15, 0.0, -0.1, 0.2], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 11
+
+  // Left Half Circle (3 Triangles)
+  { vertices: [-0.4, 0.2, -0.5, 0.1, -0.4, 0.0], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 12
+  { vertices: [-0.4, 0.0, -0.5, 0.1, -0.5, -0.1], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 13
+  { vertices: [-0.4, 0.0, -0.5, -0.1, -0.4, -0.2], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 14
+
+  // Right Half Circle (3 Triangles)
+  { vertices: [0.4, 0.2, 0.5, 0.1, 0.4, 0.0], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 15
+  { vertices: [0.4, 0.0, 0.5, 0.1, 0.5, -0.1], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 16
+  { vertices: [0.4, 0.0, 0.5, -0.1, 0.4, -0.2], color: [1.0, 1.0, 1.0, 1.0] }, // Triangle 17
+
+  // Tan Stalk/Face (2 Triangles)
+  { vertices: [-0.2, -0.2, 0.2, -0.2, -0.2, -0.6], color: [0.96, 0.8, 0.69, 1.0] }, // Triangle 18
+  { vertices: [-0.2, -0.6, 0.2, -0.2, 0.2, -0.6], color: [0.96, 0.8, 0.69, 1.0] }, // Triangle 19
+
+  // Eyes (2 Black Rectangles, 2 Triangles Each)
+  { vertices: [-0.15, -0.4, -0.1, -0.4, -0.15, -0.5], color: [0.0, 0.0, 0.0, 1.0] }, // Triangle 20
+  { vertices: [-0.15, -0.5, -0.1, -0.4, -0.1, -0.5], color: [0.0, 0.0, 0.0, 1.0] }, // Triangle 21
+  { vertices: [0.1, -0.4, 0.15, -0.4, 0.1, -0.5], color: [0.0, 0.0, 0.0, 1.0] }, // Triangle 22
+  { vertices: [0.1, -0.5, 0.15, -0.4, 0.15, -0.5], color: [0.0, 0.0, 0.0, 1.0] }, // Triangle 23
+];
+
+
+// Draw the reference triangles
+function drawReferenceTriangles() {
+  referenceTriangles.forEach(triangleData => {
+    const triangle = new Triangle();
+    triangle.position = [0.0, 0.0]; // Center is handled per vertex, so this can be [0, 0]
+    triangle.color = triangleData.color.slice(); // Copy color
+    triangle.vertices = triangleData.vertices.slice(); // Add vertices directly
+    g_shapeList.push(triangle); // Add to the global shape list
+  });
+
+  renderAllShapes(); // Redraw the canvas with all shapes
+}
+
