@@ -5,6 +5,7 @@ class Circle{
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.size = 5.0;
     this.segments = g_selectedSegments;
+    this.sweepAngle = 360;
   }
 
 
@@ -13,6 +14,7 @@ class Circle{
     var rgba = this.color;
     var size = this.size;
     var segments = this.segments;
+    var angleStep = this.sweepAngle / segments;
 
     // Pass the position of a point to a_Position variable
     gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
@@ -20,8 +22,8 @@ class Circle{
     // Draw
     var d = this.size/200.0;
 
-    let angleStep=360/this.segments;
-    for(var angle = 0; angle < 360; angle += angleStep){
+    //let angleStep=360/this.segments;
+    for(var angle = 0; angle < this.sweepAngle; angle += angleStep){
       let centerPt = [xy[0], xy[1]];
       let angle1 = angle;
       let angle2 = angle + angleStep;
