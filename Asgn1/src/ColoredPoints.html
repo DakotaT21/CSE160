@@ -15,8 +15,13 @@
 
     <button type="button" id="green"> Green </button>
     <button type="button" id="red"> Red </button>
-
+    <br>
+    <br>
     <button type="button" id="clearButton"> Clear </button>
+    <button type="button" id="gridOn"> Grid On</button>
+    <button type="button" id="gridOff"> Grid Off</button>
+    <p>
+    Grid Step <input type="range" min="0.05" max="1" step="0.05" value="0.1" class="slider" id="gridSlide">
     <br>
     <br>
     <button type="button" id="pointButton"> Point </button>
@@ -26,7 +31,6 @@
     <br>
     <button id="recreateDrawing">Recreate Drawing</button>
 
-      
     <p>
     Red <input type="range" min="0" max="100" value="100" class="slider" id="redSlide">
     <p>
@@ -38,13 +42,13 @@
     <p>
     (Circle) Segment Count <input type="range" min="5" max="20" value="10" class="slider" id="segSlide">
     <p>
-    Sweep Angle (Degrees)<input type="range" id="sweepAngle" min="10" max="360" value="360">
+    (Circle) Sweep Angle in Degrees <input type="range" id="sweepAngle" min="10" max="360" value="360">
 
     <br>
     <p>
       Reference Drawing:
       <br>
-      <img src="../images/drawing.jpg" alt="Triangle Drawing" width="400">
+      <img src="drawing.jpg" alt="Triangle Drawing" width="400">
     </p>
       
 

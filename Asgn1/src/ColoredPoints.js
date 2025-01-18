@@ -78,6 +78,8 @@ let g_selectedSize = 5.0;
 let g_selectedSegments = 10;
 let g_selectedType = POINT;
 let g_selectedSweepAngle = 360;
+var gridOn = false;
+var gridStep = 0.1;
 
 
 function addActionsforHtmlUI() {
@@ -85,11 +87,12 @@ function addActionsforHtmlUI() {
   document.getElementById('green').onclick = function() {g_selectedColor = [0.0, 1.0, 0.0, 1.0]; };
   document.getElementById('red').onclick = function() {g_selectedColor = [1.0, 0.0, 0.0, 1.0]; };
   document.getElementById('clearButton').onclick = function() {g_shapeList = []; renderAllShapes();};
+  document.getElementById('gridOn').onclick = function() {gridOn = true; renderAllShapes();};
+  document.getElementById('gridOff').onclick = function() {gridOn = false; renderAllShapes();};
 
   document.getElementById('pointButton').onclick = function() {g_selectedType = POINT; };
   document.getElementById('triButton').onclick = function() {g_selectedType = TRIANGLE; };
   document.getElementById('circleButton').onclick = function() {g_selectedType = CIRCLE; };
-
 
   //Color Slider Events
   document.getElementById('redSlide').addEventListener('mouseup', function() {g_selectedColor[0] = this.value/100;});
@@ -104,6 +107,8 @@ function addActionsforHtmlUI() {
 
   document.getElementById('sweepAngle').addEventListener('mouseup', function () {g_selectedSweepAngle = this.value;});
   
+  document.getElementById('gridSlide').addEventListener('input', function () {gridStep = parseFloat(this.value); if (gridOn) renderAllShapes();});
+
 }
 
 function main() {
@@ -172,6 +177,10 @@ function renderAllShapes() {
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT);
 
+  if (gridOn) {
+    drawGrid(gridStep);
+  }
+
   var len = g_shapeList.length;
   for(var i = 0; i < len; i++) {
     g_shapeList[i].render();
@@ -180,6 +189,40 @@ function renderAllShapes() {
   var duration = performance.now() - startTime;
   sendTexttoHTML("numdot: " + len + "  MS: " + Math.floor(duration) + "  FPS: " + Math.floor(1000/duration)/10, "numdot");
 }
+
+//Adding grid vertices to array
+function generateGridVertices(step) {
+  const vertices = [];
+  const aspectRatio = canvas.width / canvas.height;
+
+  // Horizontal lines
+  for (let y = -1.0; y <= 1.0; y += step) {
+    vertices.push(-1.0 * aspectRatio, y, 1.0 * aspectRatio, y); // Line from left to right
+  }
+
+  // Vertical lines
+  for (let x = -1.0 * aspectRatio; x <= 1.0 * aspectRatio; x += step) {
+    vertices.push(x, -1.0, x, 1.0); // Line from bottom to top
+  }
+
+  return new Float32Array(vertices);
+}
+
+
+function drawGrid(gridStep) {
+  const gridVertices = generateGridVertices(gridStep);
+  const gridBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, gridBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, gridVertices, gl.DYNAMIC_DRAW);
+
+  gl.vertexAttribPointer(a_Position, 2, gl.FLOAT, false, 0, 0);
+  gl.enableVertexAttribArray(a_Position);
+
+  gl.uniform4f(u_FragColor, 0.5, 0.5, 0.5, 1.0); // Gray color for the grid
+  gl.drawArrays(gl.LINES, 0, gridVertices.length / 2); // Draw the grid
+}
+
 
 function sendTexttoHTML(text, htmlID) {
   var htmlElm = document.getElementById(htmlID);
