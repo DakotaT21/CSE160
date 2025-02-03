@@ -1,0 +1,68 @@
+Dakota Tompkins
+<br>
+drtompki@ucsc.edu
+<br>
+<br>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Change a point color</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="webgl" width="400" height="400">
+    Please use a browser that supports "canvas"
+    </canvas>
+    <p>
+
+     <p id="numdot"> XXX </p>
+
+    <button type="button" id="startButton"> Start </button>
+    <button type="button" id="stopButton"> Stop </button>
+    <button type="button" id="resetCameraButton"> Reset Camera </button>
+
+
+    <br>
+    <br>
+
+    <!-- Y Angle <input type="range" min="-45" max="45" value="0" class="slider" id="yellowSlide">
+    <p>
+
+    M Angle <input type="range" min="-45" max="45" value="0" class="slider" id="magSlide">
+    <p> -->
+    
+<!-- Sliders for front and back leg joints -->
+    <p> Front Thigh Angle: <input type="range" min="-45" max="35" value="0" class="slider" id="frontThighSlide"> </p>
+    <p> Front Shin Angle: <input type="range" min="-45" max="0" value="0" class="slider" id="frontShinSlide"> </p>
+    <p> Back Thigh Angle: <input type="range" min="-45" max="35" value="0" class="slider" id="backThighSlide"> </p>
+    <p> Back Shin Angle: <input type="range" min="-45" max="0" value="0" class="slider" id="backShinSlide"> </p>
+    <p> Camera Angle <input type="range" min="-180" max="180" value="0" class="slider" id="angleSlide">
+    
+<!-- 
+    <br>
+    <p>
+      Reference Drawing:
+      <br>
+      <img src="drawing.jpg" alt="Triangle Drawing" width="400">
+    </p>
+    Awesomeness Notes: <br>
+    I integrated the drawing recreation into the canvas. <br>
+    I added a grid to the canvas to help with the placement of shapes. 
+    The grid can be toggled on and off with the buttons above 
+    and the grid step can be adjusted with the slider above. <br>
+    I also added a slider for circles to adjust the angle out of 360 degrees. -->
+      
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix.js"></script>
+
+    <script src="Circle.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Point.js"></script>
+    <script src="Cube.js"></script>
+    <script src="BlockyAnimal.js"></script>
+  </body>
+</html>
