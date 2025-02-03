@@ -21,7 +21,6 @@ let canvas;
 let gl;
 let a_Position;
 let u_FragColor;
-let u_Segments;
 
 function setupWebGL() {
   // Retrieve <canvas> element
@@ -78,12 +77,6 @@ function connectVariablesToGLSL() {
 
 }
 
-//Constants
-const POINT = 0;
-const TRIANGLE = 1;
-const CIRCLE = 2;
-
-
 // Global Variables for UI
 let g_globalAngle = 0;
 let g_animation = false;
@@ -94,7 +87,7 @@ let g_bodyTiltAngle = 0;
 let g_frontThighAngle = 0, g_frontShinAngle = 0;
 let g_backThighAngle = 0, g_backShinAngle = 0;
 let g_earAngle = 0;
-let g_tailBaseAngle = 0, g_tailMidAngle = 0, g_tailTipAngle = 0;
+//let g_tailBaseAngle = 0, g_tailMidAngle = 0, g_tailTipAngle = 0;
 
 let g_mouseXRotation = 0;
 let g_mouseYRotation = 0;
@@ -102,6 +95,8 @@ let isMouseDragging = false;
 let lastMouseX = 0;
 let lastMouseY = 0;
 
+var g_startTime = performance.now()/1000.0;
+var g_seconds = performance.now()/1000.0 - g_startTime;
 
 
 function addActionsforHtmlUI() {
@@ -121,9 +116,8 @@ function addActionsforHtmlUI() {
   document.getElementById('resetCameraButton').onclick = function() {
     g_mouseXRotation = 0;
     g_mouseYRotation = 0;
-    renderAllShapes(); // Redraw the scene with reset values
+    renderAllShapes();
   };
-
 
   document.getElementById('frontThighSlide').addEventListener('input', function() {
     g_frontThighAngle = parseFloat(this.value);
@@ -148,7 +142,6 @@ function addActionsforHtmlUI() {
 }
 
 function main() {
-
   setupWebGL();
   connectVariablesToGLSL();
   addActionsforHtmlUI();
@@ -163,9 +156,9 @@ function main() {
   // Render the scene
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   renderAllShapes(); 
-  //requestAnimationFrame(tick);
 }
 
+//Camera Rotation
 function onMouseDown(event) {
   isMouseDragging = true;
   lastMouseX = event.clientX;
@@ -193,10 +186,7 @@ function onMouseUp(event) {
 }
 
 
-var g_startTime = performance.now()/1000.0;
-var g_seconds = performance.now()/1000.0 - g_startTime;
-
-
+//Animation
 function tick() {
   //Save the current time
   g_seconds = performance.now()/1000.0 - g_startTime;
@@ -211,11 +201,12 @@ function tick() {
 
 function updateAnimation() {
   if (g_animation) {
-      let speed = 7; // Walking speed
+      let speed = 7;
       let motion = Math.sin(g_seconds * speed);
 
       // Full body bounce (moves up/down with step)
-      g_bodyBounce = 0.02 * motion;
+      g_bodyBounce = 0.05 * motion;
+      g_bodyTiltAngle = -5 * motion;
 
       // Leg animation
       g_frontThighAngle = 20 * motion;
@@ -224,30 +215,30 @@ function updateAnimation() {
       g_backThighAngle = 20 * Math.sin(g_seconds * speed - Math.PI / 2); // Delayed by 90 degrees
       g_backShinAngle = 10 * Math.sin(g_seconds * speed + 1 - Math.PI / 2); // Delayed by 90 degrees
 
-
-      g_bodyTiltAngle = -5 * motion;
-
       // Sync sliders with animation values
       document.getElementById('frontThighSlide').value = g_frontThighAngle;
       document.getElementById('frontShinSlide').value = g_frontShinAngle;
       document.getElementById('backThighSlide').value = g_backThighAngle;
       document.getElementById('backShinSlide').value = g_backShinAngle;
 
-      // Ears wiggle slightly
-      g_earAngle = 5 * Math.sin(g_seconds * 3);
+      // Ears wiggle
+      g_earAngle = 40 * (-motion - 9);
 
       // Tail waves back and forth
-      g_tailBaseAngle = 10 * Math.sin(g_seconds * 2);
-      g_tailMidAngle = 10 * Math.sin(g_seconds * 2 + 1);
-      g_tailTipAngle = 10 * Math.sin(g_seconds * 2 + 2);
+      // g_tailBaseAngle = 10 * Math.sin(g_seconds * 2);
+      // g_tailMidAngle = 10 * Math.sin(g_seconds * 2 + 1);
+      // g_tailTipAngle = 10 * Math.sin(g_seconds * 2 + 2);
 
       renderAllShapes();
   }
+
+  
+
 }
 
 
+// Scene Rendering
 function renderAllShapes() {
-  
   // Check the time at the start of this function
   var startTime = performance.now();
 
@@ -261,10 +252,8 @@ function renderAllShapes() {
 
   // Clear <canvas>
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-  gl.uniformMatrix4fv(u_GlobalRotateMatrix, false, globalRotMat.elements);
   
-
+  // Pig Model
   // Body
   var body = new Cube();
   body.color = [1.0, 0.6, 0.7, 1.0]; // Pink color
@@ -327,7 +316,7 @@ function renderAllShapes() {
     let x_offset = (i === 0) ? 0.7 : 0.1;
     ear.matrix = new Matrix4(head.matrix);
     ear.matrix.translate(x_offset, 1, 0.5);
-    ear.matrix.rotate(g_earAngle, 0, 0, 1);
+    ear.matrix.rotate(g_earAngle, 1, 0, 0);
     ear.matrix.scale(0.2, 0.2, 0.1);
     ear.render();
   }
@@ -364,6 +353,36 @@ function renderAllShapes() {
       shin.render();
   }
 
+  // // Tail Base (First segment, attached to the body)
+  // var tailBase = new Cube();
+  // tailBase.color = [1.0, 0.5, 0.6, 1.0];
+  // tailBase.matrix = new Matrix4(bodyMatrix); // Attach to body
+  // tailBase.matrix.translate(0.35, 0.2, 1.5); // Attach to rear
+  // tailBase.matrix.rotate(g_tailBaseAngle, 0, 0, 1); // Base curl
+  // tailBase.matrix.scale(0.1, 0.2, 0.05);
+  // let tailMatrix = new Matrix4(tailBase.matrix); // Save base transformation
+  // tailBase.render();
+
+  // // Tail Middle (Second segment, attached to tail base)
+  // var tailMid = new Cube();
+  // tailMid.color = [1.0, 0.4, 0.5, 1.0];
+  // tailMid.matrix = new Matrix4(tailMatrix); // Inherit from tail base
+  // tailMid.matrix.translate(0.0, 1, 0.0); // Move up
+  // //tailMid.matrix.rotate(g_tailMidAngle, 0, 0, 1); // Mid curl
+  // //tailMid.matrix.rotate(90, 0, 0, 1); // Mid curl
+  // //tailMid.matrix.scale(0.1, 0.2, 0.1);
+  // tailMatrix = new Matrix4(tailMid.matrix); // Save middle transformation
+  // tailMid.render();
+
+  // // Tail Tip (Third segment, attached to tail mid)
+  // var tailTip = new Cube();
+  // tailTip.color = [1.0, 0.3, 0.4, 1.0];
+  // tailTip.matrix = new Matrix4(tailMatrix); // Inherit from tail middle
+  // tailTip.matrix.translate(0.0, 1, 0.0); // Move up
+  // //tailTip.matrix.rotate(g_tailTipAngle, 0, 0, 1); // Tip curl
+  // //tailTip.matrix.scale(0.1, 0.2, 0.1);
+  // tailTip.render();
+
   var duration = performance.now() - startTime;
   sendTexttoHTML("  MS: " + Math.floor(duration) + "  FPS: " + Math.floor(1000/duration)/10, "numdot");
 }
@@ -381,7 +400,6 @@ function convertCoordinatesEventToGL(ev) {
   return ([x, y]);
 }
 
-
 function sendTexttoHTML(text, htmlID) {
   var htmlElm = document.getElementById(htmlID);
   if(!htmlElm){
@@ -390,4 +408,3 @@ function sendTexttoHTML(text, htmlID) {
   }
   htmlElm.innerHTML = text;
 }
-
