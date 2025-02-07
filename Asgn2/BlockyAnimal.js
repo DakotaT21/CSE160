@@ -87,7 +87,7 @@ let g_bodyTiltAngle = 0;
 let g_frontThighAngle = 0, g_frontShinAngle = 0;
 let g_backThighAngle = 0, g_backShinAngle = 0;
 let g_earAngle = 0;
-//let g_tailBaseAngle = 0, g_tailMidAngle = 0, g_tailTipAngle = 0;
+let g_tailBaseAngle = 0, g_tailMidAngle = 0, g_tailTipAngle = 0;
 
 let g_mouseXRotation = 0;
 let g_mouseYRotation = 0;
@@ -225,9 +225,9 @@ function updateAnimation() {
       g_earAngle = 40 * (-motion - 9);
 
       // Tail waves back and forth
-      // g_tailBaseAngle = 10 * Math.sin(g_seconds * 2);
-      // g_tailMidAngle = 10 * Math.sin(g_seconds * 2 + 1);
-      // g_tailTipAngle = 10 * Math.sin(g_seconds * 2 + 2);
+      g_tailBaseAngle = 10 * Math.sin(g_seconds * 2);
+      g_tailMidAngle = 10 * Math.sin(g_seconds * 2 + 1);
+      g_tailTipAngle = 10 * Math.sin(g_seconds * 2 + 2);
 
       renderAllShapes();
   }
@@ -353,35 +353,38 @@ function renderAllShapes() {
       shin.render();
   }
 
-  // // Tail Base (First segment, attached to the body)
-  // var tailBase = new Cube();
-  // tailBase.color = [1.0, 0.5, 0.6, 1.0];
-  // tailBase.matrix = new Matrix4(bodyMatrix); // Attach to body
-  // tailBase.matrix.translate(0.35, 0.2, 1.5); // Attach to rear
-  // tailBase.matrix.rotate(g_tailBaseAngle, 0, 0, 1); // Base curl
-  // tailBase.matrix.scale(0.1, 0.2, 0.05);
-  // let tailMatrix = new Matrix4(tailBase.matrix); // Save base transformation
-  // tailBase.render();
+  // Tail Base (First segment, attached to the body)
+  var tailBase = new Cube();
+  tailBase.color = [1.0, 0.5, 0.6, 1.0];
+  tailBase.matrix = new Matrix4(bodyMatrix); // Attach to body
+  tailBase.matrix.translate(0.3, 0.7, 1); // Attach to rear
+  tailBase.matrix.rotate(-45, 0, 0, 1); // Base curl
+  tailBase.matrix.rotate(g_tailBaseAngle, 0, 0, 1); // Base curl
+  tailBase.matrix.scale(0.1, 0.2, 0.05);
 
-  // // Tail Middle (Second segment, attached to tail base)
-  // var tailMid = new Cube();
-  // tailMid.color = [1.0, 0.4, 0.5, 1.0];
-  // tailMid.matrix = new Matrix4(tailMatrix); // Inherit from tail base
-  // tailMid.matrix.translate(0.0, 1, 0.0); // Move up
-  // //tailMid.matrix.rotate(g_tailMidAngle, 0, 0, 1); // Mid curl
-  // //tailMid.matrix.rotate(90, 0, 0, 1); // Mid curl
-  // //tailMid.matrix.scale(0.1, 0.2, 0.1);
-  // tailMatrix = new Matrix4(tailMid.matrix); // Save middle transformation
-  // tailMid.render();
+  let tailMatrix = new Matrix4(tailBase.matrix); // Save base transformation
+  tailBase.render();
 
-  // // Tail Tip (Third segment, attached to tail mid)
-  // var tailTip = new Cube();
-  // tailTip.color = [1.0, 0.3, 0.4, 1.0];
-  // tailTip.matrix = new Matrix4(tailMatrix); // Inherit from tail middle
-  // tailTip.matrix.translate(0.0, 1, 0.0); // Move up
-  // //tailTip.matrix.rotate(g_tailTipAngle, 0, 0, 1); // Tip curl
-  // //tailTip.matrix.scale(0.1, 0.2, 0.1);
-  // tailTip.render();
+  // Tail Middle (Second segment, attached to tail base)
+  var tailMid = new Cube();
+  tailMid.color = [1.0, 0.4, 0.5, 1.0];
+  tailMid.matrix = new Matrix4(tailMatrix); // Inherit from tail base
+  tailMid.matrix.translate(0, 2, 0.0); // Move up
+  tailMid.matrix.rotate(g_tailMidAngle, 0, 0, 1); // Mid curl
+  //tailMid.matrix.rotate(45, 0, 0, 1); // Base curl
+  //tailMid.matrix.scale(0.1, 0.2, 0.1);
+  tailMatrix = new Matrix4(tailMid.matrix); // Save middle transformation
+  tailMid.render();
+
+  // Tail Tip (Third segment, attached to tail mid)
+  var tailTip = new Cube();
+  tailTip.color = [1.0, 0.3, 0.4, 1.0];
+  tailTip.matrix = new Matrix4(tailMatrix); // Inherit from tail middle
+  tailTip.matrix.translate(0, 2, 0.0); // Move up
+  tailTip.matrix.rotate(g_tailTipAngle, 0, 0, 1); // Tip curl
+  //tailTip.matrix.rotate(-45, 0, 0, 1); // Base curl
+  //tailTip.matrix.scale(0.1, 0.2, 0.1);
+  tailTip.render();
 
   var duration = performance.now() - startTime;
   sendTexttoHTML("  MS: " + Math.floor(duration) + "  FPS: " + Math.floor(1000/duration)/10, "numdot");
