@@ -1,20 +1,17 @@
 // Cube.js – Single‐Buffer Version
 
 class Cube {
-  /**
-   * One‐time static initialization of the cube’s geometry buffer.
-   * Call Cube.initCubeBuffer() once (in main) before creating/rendering any cubes.
-   */
+   //One‐time static initialization of the cube’s geometry buffer.  
   static initCubeBuffer() {
     // If already initted, skip.
     if (Cube.initted) return;
 
     // Interleaved positions (x,y,z) and UV (u,v).
     // For each face we have 6 vertices (two triangles).
-    // This layout is:  x,  y,  z,   u,  v
-    // The faces are ordered: Front, Back, Left, Right, Top, Bottom.
+    // Layout:  x,  y,  z,   u,  v
+    // Ordered: Front, Back, Left, Right, Top, Bottom.
     // Each face has 6 vertices => 6*6 = 36 vertices total.
-    // That means 36 * 5 = 180 float entries.
+    // 36 * 5 = 180 float entries.
     const VERTICES = new Float32Array([
       // FRONT FACE (z=0)
       0,0,0,   0,0,
@@ -76,7 +73,7 @@ class Cube {
     gl.bindBuffer(gl.ARRAY_BUFFER, Cube.buffer);
     gl.bufferData(gl.ARRAY_BUFFER, VERTICES, gl.STATIC_DRAW);
 
-    // We have 36 vertices total.
+    //36 vertices total.
     Cube.numVertices = 36;
 
     // Each vertex has 5 floats: [x, y, z, u, v].
@@ -95,7 +92,6 @@ class Cube {
     this.type = 'cube';
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
-    //  -2 = solid color mode, -1 = debug UV, 0 = sampler0, etc.
     this.textureNum = textureNum;
     this.isSky = false;  
   }
@@ -120,7 +116,7 @@ class Cube {
     gl.enableVertexAttribArray(a_Position);
 
     // Tell GL how to interpret the buffer for UV
-    //  (the UV starts at float offset 3 => 3*FSIZE)
+    // (the UV starts at float offset 3 => 3*FSIZE)
     gl.vertexAttribPointer(
       a_UV,
       2, 
@@ -140,7 +136,6 @@ class Cube {
     const rgba = this.color;
 
     if (this.isSky) {
-      // "Sky" cubes => same color for all 6 faces
       gl.uniform4f(u_FragColor, rgba[0], rgba[1], rgba[2], rgba[3]);
       gl.drawArrays(gl.TRIANGLES, 0, Cube.numVertices);
 
