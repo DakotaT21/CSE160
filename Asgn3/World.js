@@ -1,4 +1,7 @@
-// ColoredPoint.js (c) 2012 matsuda
+// BLOCKY WORLD
+// Dakota Tompkins 
+// drtompki@ucsc.edu
+
 // Vertex shader program
 var VSHADER_SOURCE =
   'precision mediump float;\n' +
@@ -20,6 +23,7 @@ var FSHADER_SOURCE =
   'varying vec2 v_UV;\n' +
   'uniform vec4 u_FragColor;\n' +
   'uniform sampler2D u_Sampler0;\n' +
+  'uniform sampler2D u_Sampler1;\n' +
   'uniform int u_whichTexture;\n' +
 
   'void main() {\n' +
@@ -33,6 +37,9 @@ var FSHADER_SOURCE =
   '  } else if (u_whichTexture == 0) {\n' +
   '    gl_FragColor = texture2D(u_Sampler0, v_UV);\n' +
 
+ '   } else if (u_whichTexture == 1) {\n' +
+ '     gl_FragColor = texture2D(u_Sampler1, v_UV);\n' +
+
   '  } else {\n' +
   '    gl_FragColor = vec4(1.2, 0.2, 0.2, 1.0);\n' +
 
@@ -42,8 +49,8 @@ var FSHADER_SOURCE =
 // -2   : Use a solid uniform color
 // -1   : Debug: visualize the UV coordinates
 //  0   : Use texture sampler0
+//  1   : Use texture sampler1
 // else : Fallback color - reddish
-
 
 
 // Global Variables
@@ -58,10 +65,33 @@ let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
 let u_Sampler0;
+let u_Sampler1;
 let u_whichTexture;
+
 let camera = new Camera();
+let g_globalAngle = 0;
+let g_animation = false;
+let cameraControlEnabled = false;
+
+let g_bodyBounce = 0;
+let g_bodyTiltAngle = 0;
+
+let g_frontThighAngle = 0, g_frontShinAngle = 0;
+let g_backThighAngle = 0, g_backShinAngle = 0;
+let g_earAngle = 0;
+let g_tailBaseAngle = 0, g_tailMidAngle = 0, g_tailTipAngle = 0;
+
+let g_mouseXRotation = 0;
+let g_mouseYRotation = 0;
+let isMouseDragging = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+var g_startTime = performance.now()/1000.0;
+var g_seconds = performance.now()/1000.0 - g_startTime;
 
 
+// INITIALIZATION
 function setupWebGL() {
   // Retrieve <canvas> element
   canvas = document.getElementById('webgl');
@@ -139,41 +169,19 @@ function connectVariablesToGLSL() {
       return false;
     }
 
+    var u_Sampler1 = gl.getUniformLocation(gl.program, 'u_Sampler1'); // <-- new
+    if (!u_Sampler1) {
+      console.log('Failed to get the storage location of u_Sampler1');
+      return false;
+    }
+
     // Get the storage location of u_whichTexture
     u_whichTexture = gl.getUniformLocation(gl.program, 'u_whichTexture');
     if (!u_whichTexture) {
       console.log('Failed to get the storage location of u_whichTexture');
       return;
     }
-
   }
-  
-
-// Global Variables
-let g_globalAngle = 0;
-let g_animation = false;
-let cameraControlEnabled = false;
-
-
-
-
-let g_bodyBounce = 0;
-let g_bodyTiltAngle = 0;
-
-let g_frontThighAngle = 0, g_frontShinAngle = 0;
-let g_backThighAngle = 0, g_backShinAngle = 0;
-let g_earAngle = 0;
-let g_tailBaseAngle = 0, g_tailMidAngle = 0, g_tailTipAngle = 0;
-
-let g_mouseXRotation = 0;
-let g_mouseYRotation = 0;
-let isMouseDragging = false;
-let lastMouseX = 0;
-let lastMouseY = 0;
-
-var g_startTime = performance.now()/1000.0;
-var g_seconds = performance.now()/1000.0 - g_startTime;
-
 
 function addActionsforHtmlUI() {
 
@@ -217,26 +225,33 @@ function addActionsforHtmlUI() {
 
 }
 
-function initTextures(gl, n) {
+function sendTexttoHTML(text, htmlID) {
+  var htmlElm = document.getElementById(htmlID);
+  if(!htmlElm){
+    console.log("HTML element:" + htmlID + " not found");
+    return;
+  }
+  htmlElm.innerHTML = text;
+}
+
+function initTexture() {
   // Create an image object
   var image = new Image();
   if (!image) {
     console.log('Failed to create the image object');
     return false;
   }
-  
   // Register the event handler to be called on loading the image
   image.onload = function() {
     sendTextureToTEXTURE0(image);
+    renderAllShapes();
   };
-  
   // Tell the browser to load an image (adjust the path as needed)
   image.src = './resources/sky.jpg';
-  
+
   return true;
 }
 
-//gl, n, texture, u_Sampler0, 
 function sendTextureToTEXTURE0(image) {
   // Create a texture object
   var texture = gl.createTexture();
@@ -270,12 +285,48 @@ function sendTextureToTEXTURE0(image) {
   console.log("Texture loaded successfully");
 }
 
+function initTexture1() {
+  var image1 = new Image();
+  if (!image1) {
+    console.log('Failed to create the image object for texture1');
+    return false;
+  }
+  image1.onload = function() {
+    sendTextureToTEXTURE1(image1);
+  };
+  image1.src = './resources/dirt.jpg';
+  renderAllShapes();
+  return true;
+}
+
+function sendTextureToTEXTURE1(image) {
+  var texture1 = gl.createTexture();
+  if (!texture1) {
+    console.log('Failed to create the texture object for texture1');
+    return false;
+  }
+
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, 1);
+  gl.activeTexture(gl.TEXTURE1);
+  gl.bindTexture(gl.TEXTURE_2D, texture1);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, image);
+  gl.uniform1i(u_Sampler1, 1);
+
+  console.log("Second texture loaded successfully");
+}
+
+
+
+
+//MAIN
 function main() {
   setupWebGL();
   connectVariablesToGLSL();
   addActionsforHtmlUI();
   Cube.initCubeBuffer();
-  initTextures(gl, 0);
+  initTexture();
+  initTexture1();
 
   document.getElementById('webgl').addEventListener('mousedown', onMouseDown);
   document.getElementById('webgl').addEventListener('mousemove', onMouseMove);
@@ -317,13 +368,15 @@ function main() {
   renderAllShapes(); 
 }
 
+
+
+//CAMERA
 //Camera Rotation with click and drag
 function onMouseDown(event) {
   isMouseDragging = true;
   lastMouseX = event.clientX;
   lastMouseY = event.clientY;
 }
-
 function onMouseMove(event) {
   if (isMouseDragging || cameraControlEnabled) {
     let dx = event.clientX - lastMouseX;
@@ -335,7 +388,6 @@ function onMouseMove(event) {
     renderAllShapes();
   }
 }
-
 function onMouseUp(event) {
   isMouseDragging = false;
 }
@@ -362,8 +414,7 @@ function updateCameraWithMouse(e) {
 
 
 
-
-//Animation
+//ANIMATION
 function tick() {
   //Save the current time
   g_seconds = performance.now()/1000.0 - g_startTime;
@@ -409,12 +460,10 @@ function updateAnimation() {
       renderAllShapes();
   }
 
-  
-
 }
 
 
-// Scene Rendering
+// SCENE RENDERING
 function renderAllShapes() {
   // Check the time at the start of this function
   var startTime = performance.now();
@@ -426,7 +475,6 @@ function renderAllShapes() {
   //Create a view matrix (positions/rotates the camera).
   let viewMat = camera.updateViewMatrix();
   gl.uniformMatrix4fv(u_ViewMatrix, false, viewMat.elements);
-
 
   // Pass the matrix to u_ModelMatrix attribute
   var globalRotMat = new Matrix4()
@@ -448,7 +496,6 @@ function renderAllShapes() {
   ground.matrix.rotate(180, 1, 0, 0); // Rotate to face up
   ground.matrix.scale(100, 0.01, 100);
   ground.matrix.translate(-0.5, 0.005, -0.5);
-
   ground.render();
 
   // Draw sky
@@ -458,12 +505,62 @@ function renderAllShapes() {
   sky.textureNum = -2; // Use solid color
   sky.matrix.scale(50, 50, 50);
   sky.matrix.translate(-0.5, -0.5, -0.5);
-
-  //sky.matrix.rotate(180, 0, 1, 0); // Rotate to face down
   sky.render();
 
+  drawRing();
+  drawMap();
 
-  // PIG MODEL
+  drawPig();
+
+  var duration = performance.now() - startTime;
+  sendTexttoHTML("  MS: " + Math.floor(duration) + "  FPS: " + Math.floor(1000/duration)/10, "numdot");
+}
+
+var g_map = [
+  [1, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 1, 0, 0, 0, 0, 0, 0],  
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0],  
+  [0, 0, 0, 0, 0, 0, 0, 0]];
+
+function drawMap() {
+  for (x=0; x<8; x++) {
+    for (y=0; y<8; y++) {
+      if (g_map[x][y] == 1) {
+        var cube = new Cube();
+        //cube.color = [0.3, 0.9, 0.3, 1.0]; // Yellow color
+        cube.textureNum = 1; // Use dirt color
+        cube.matrix.translate(x-4, 0.75, y-4);
+        cube.render();
+      }
+    }
+  }
+}
+
+function drawRing() {
+  for (let x = 0; x < 32; x++) {
+    for (let y = 0; y < 32; y++) {
+      // console.log(x, y); // Uncomment if you want to log coordinates
+
+      // If on the border of the 32x32 grid, draw a cube
+      if (x === 0 || x === 31 || y === 0 || y === 31) {
+        let body = new Cube();
+        body.color = [0.8, 1.0, 1.0, 1.0];      // Light teal color
+        body.textureNum = -2;                  // Use solid color
+        body.matrix.translate(0, 0.75, 0);    // Shift downward
+        body.matrix.scale(0.3, 0.3, 0.3);      // Scale to smaller size
+        body.matrix.translate(x - 16, 0, y - 16); // Position in grid
+        body.render();
+      }
+    }
+  }
+}
+
+function drawPig(){
+    // PIG MODEL
   // Body
   var body = new Cube();
   body.color = [1.0, 0.6, 0.7, 1.0]; // Pink color
@@ -572,62 +669,4 @@ function renderAllShapes() {
       shin.matrix.scale(0.3, 0.15, 0.2);
       shin.render();
   }
-
-  // // Tail Base (First segment, attached to the body)
-  // var tailBase = new Cube();
-  // tailBase.color = [1.0, 0.5, 0.6, 1.0];
-  // tailBase.matrix = new Matrix4(bodyMatrix); // Attach to body
-  // tailBase.matrix.translate(0.3, 0.7, 1); // Attach to rear
-  // tailBase.matrix.rotate(-45, 0, 0, 1); // Base curl
-  // tailBase.matrix.rotate(g_tailBaseAngle, 0, 0, 1); // Base curl
-  // tailBase.matrix.scale(0.1, 0.2, 0.05);
-
-  // let tailMatrix = new Matrix4(tailBase.matrix); // Save base transformation
-  // tailBase.render();
-
-  // // Tail Middle (Second segment, attached to tail base)
-  // var tailMid = new Cube();
-  // tailMid.color = [1.0, 0.4, 0.5, 1.0];
-  // tailMid.matrix = new Matrix4(tailMatrix); // Inherit from tail base
-  // tailMid.matrix.translate(0, 2, 0.0); // Move up
-  // tailMid.matrix.rotate(g_tailMidAngle, 0, 0, 1); // Mid curl
-  // //tailMid.matrix.rotate(45, 0, 0, 1); // Base curl
-  // //tailMid.matrix.scale(0.1, 0.2, 0.1);
-  // tailMatrix = new Matrix4(tailMid.matrix); // Save middle transformation
-  // tailMid.render();
-
-  // // Tail Tip (Third segment, attached to tail mid)
-  // var tailTip = new Cube();
-  // tailTip.color = [1.0, 0.3, 0.4, 1.0];
-  // tailTip.matrix = new Matrix4(tailMatrix); // Inherit from tail middle
-  // tailTip.matrix.translate(0, 2, 0.0); // Move up
-  // tailTip.matrix.rotate(g_tailTipAngle, 0, 0, 1); // Tip curl
-  // //tailTip.matrix.rotate(-45, 0, 0, 1); // Base curl
-  // //tailTip.matrix.scale(0.1, 0.2, 0.1);
-  // tailTip.render();
-
-  var duration = performance.now() - startTime;
-  sendTexttoHTML("  MS: " + Math.floor(duration) + "  FPS: " + Math.floor(1000/duration)/10, "numdot");
-}
-
-
-function convertCoordinatesEventToGL(ev) {
-  // Convert coordinates to canvas system
-  var x = ev.clientX; // x coordinate of a mouse pointer
-  var y = ev.clientY; // y coordinate of a mouse pointer
-  var rect = ev.target.getBoundingClientRect();
-
-  x = ((x - rect.left) - canvas.width/2)/(canvas.width/2);
-  y = (canvas.height/2 - (y - rect.top))/(canvas.height/2);
-
-  return ([x, y]);
-}
-
-function sendTexttoHTML(text, htmlID) {
-  var htmlElm = document.getElementById(htmlID);
-  if(!htmlElm){
-    console.log("HTML element:" + htmlID + " not found");
-    return;
-  }
-  htmlElm.innerHTML = text;
 }

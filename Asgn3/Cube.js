@@ -91,12 +91,12 @@ class Cube {
     Cube.initted = true;
   }
 
-  constructor() {
+  constructor(textureNum) {
     this.type = 'cube';
     this.color = [1.0, 1.0, 1.0, 1.0];
     this.matrix = new Matrix4();
     //  -2 = solid color mode, -1 = debug UV, 0 = sampler0, etc.
-    this.textureNum = 0;
+    this.textureNum = textureNum;
     this.isSky = false;  
   }
 
