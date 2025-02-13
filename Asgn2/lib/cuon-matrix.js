@@ -695,6 +695,12 @@ Matrix4.prototype.dropShadowDirectionally = function(normX, normY, normZ, planeX
   return this.dropShadow([normX, normY, normZ, -a], [lightX, lightY, lightZ, 0]);
 };
 
+
+
+
+
+
+
 /**
  * Constructor of Vector3
  * If opt_src is specified, new vector is initialized by opt_src.
