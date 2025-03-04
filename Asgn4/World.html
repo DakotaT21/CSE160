@@ -1,0 +1,67 @@
+Dakota Tompkins
+<br>
+drtompki@ucsc.edu
+<br>
+<br>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Change a point color</title>
+  </head>
+
+  <body onload="main()">
+    <canvas id="webgl" width="400" height="400">
+    Please use a browser that supports "canvas"
+    </canvas>
+    <p>
+
+     <p id="numdot"> XXX </p>
+
+    <button type="button" id="startButton"> Dance Party! </button>
+    <button type="button" id="stopButton"> Stop </button>
+    <button id="lightToggle">Toggle Light</button>
+    <button id="normToggle">Toggle Normal Viz</button>
+    <button id="spotToggle">Toggle Spotlight</button>
+
+
+    <p>
+        <strong>Movement commands:</strong> <br>
+        'w': Move camera forward. <br>
+        's': Move camera backward. <br>
+        'a': Move camera left. <br>
+        'd': Move camera right. <br>
+         <br>
+         <strong>Camera commands:</strong> <br>
+        'q': Rotate camera left. <br>
+        'e': Rotate camera right. <br>
+        'click and drag' : Click and drag on the canvas. 
+        <br><br>
+        <strong>Special:</strong> <br>
+        First, place cursor in the middle of the canvas. <br>
+        'c':  Toggle pointer lock to lock/unlock camera rotation with the mouse. <br>
+        <br>
+        -Randomized map on reload.
+        <br>
+        -Dance Party Button
+
+    </p>
+      
+    <script src="lib/webgl-utils.js"></script>
+    <script src="lib/webgl-debug.js"></script>
+    <script src="lib/cuon-utils.js"></script>
+    <script src="lib/cuon-matrix.js"></script>
+
+    <script src="Circle.js"></script>
+    <script src="Triangle.js"></script>
+    <script src="Point.js"></script>
+    <script src="Cube.js"></script>
+    <script src="Camera.js"></script>
+    <script src="World.js"></script>
+    
+  </body>
+  
+</html>
+
+
