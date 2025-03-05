@@ -5,11 +5,10 @@
 // Vertex shader program
 var VSHADER_SOURCE =
   'precision mediump float;\n' +
-
   // Attributes
   'attribute vec4 a_Position;\n' +
+  'attribute vec3 a_Normal;\n' +
   'attribute vec2 a_UV;\n' +
-  'attribute vec3 a_Normal;\n' + 
 
   // Uniforms
   'uniform mat4 u_ModelMatrix;\n' +
@@ -24,14 +23,16 @@ var VSHADER_SOURCE =
   'varying vec2 v_UV;\n' +
 
   'void main() {\n' +
-    //Compute world position of this vertex
-    'vec4 worldPos = u_ModelMatrix * a_Position;\n' +
-    'v_VertexPos  = vec3(worldPos);\n' +
-    // Transform normal by normal matrix
-    'v_Normal = mat3(u_NormalMatrix) * a_Normal;\n' +
-    // Pass uv
-    'v_UV = a_UV;\n' +
-    'gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * worldPos' +
+  // Compute world position
+  '  vec4 worldPos = u_ModelMatrix * a_Position;\n' +
+  '  v_VertexPos = vec3(worldPos);\n' +
+  // Transform the normal
+  '  v_Normal = mat3(u_NormalMatrix) * a_Normal;\n' +
+  // Pass UV
+  '  v_UV = a_UV;\n' +
+
+  // Final clip-space position
+  '  gl_Position = u_ProjectionMatrix * u_ViewMatrix * u_GlobalRotateMatrix * worldPos;\n' +
   '}\n';
 
 // Fragment shader program
@@ -78,6 +79,7 @@ var FSHADER_SOURCE =
     'else if (u_whichTexture == 1) baseColor = texture2D(u_Sampler1, v_UV);\n' +
     'else if (u_whichTexture == 2) baseColor = texture2D(u_Sampler2, v_UV);\n' +
     'else if (u_whichTexture == -2) baseColor = u_FragColor;\n' +  // solid color
+    'else if (u_whichTexture == -10) gl_FragColor = u_FragColor; \n' +
     'else baseColor = vec4(1.0,0.2,0.2,1.0);\n' +
 
     // If lighting is off, just use the baseColor
@@ -120,7 +122,7 @@ var FSHADER_SOURCE =
     // Final color
     '  vec3 finalColor = ambientTerm + mainLight + spotLight;\n' +
     '  gl_FragColor = vec4(finalColor, baseColor.a);\n' +
-'};\n'
+'}\n'
 
 // -3   : Visualize the normal
 // -2   : Use a solid uniform color
@@ -142,6 +144,7 @@ let u_ModelMatrix;
 let u_ProjectionMatrix;
 let u_ViewMatrix;
 let u_GlobalRotateMatrix;
+let u_NormalMatrix
 
 // Textures - Add
 let u_whichTexture;
@@ -157,8 +160,12 @@ let g_normalViz = false;
 
 // Light position
 let g_lightPosX = 2;
-let g_lightPosY = 2;
+let g_lightPosY = 50;
 let g_lightPosZ = 2;
+
+// Global lighting color
+let g_lightColor   = [1.0, 1.0, 1.0];
+let g_ambientColor = [0.2, 0.2, 0.2];
 
 // Spotlight settings
 let g_spotPos    = [0, 3, 0];       // spotlight position
@@ -344,6 +351,14 @@ function connectVariablesToGLSL() {
       return false;
     }
 
+    u_NormalMatrix = gl.getUniformLocation(gl.program, 'u_NormalMatrix');
+    if (!u_NormalMatrix) {
+      console.log('Failed to get the storage location of u_NormalMatrix');
+      return;
+    }
+
+    
+
   }
 
 function addActionsforHtmlUI() {
@@ -363,13 +378,38 @@ function addActionsforHtmlUI() {
   };
 
   document.getElementById('normToggle').onclick = function(){ 
-    g_normalViz=!g_normalViz; renderAllShapes(); 
+    g_normalViz=!g_normalViz; 
+    renderAllShapes(); 
   };
 
   document.getElementById('spotToggle').onclick = function() {
     g_spotOn = !g_spotOn;
     renderAllShapes();
   };
+
+  document.getElementById('lightColorR').addEventListener('input', function() {
+    g_lightColor[0] = parseFloat(this.value);
+    renderAllShapes();
+  });
+  document.getElementById('lightColorG').addEventListener('input', function() {
+    g_lightColor[1] = parseFloat(this.value);
+    renderAllShapes();
+  });
+  document.getElementById('lightColorB').addEventListener('input', function() {
+    g_lightColor[2] = parseFloat(this.value);
+    renderAllShapes();
+  });
+
+  document.getElementById('lightPosX').oninput = function() {
+    g_lightPosX = this.value;
+    renderAllShapes();
+  };
+
+  document.getElementById('lightPosZ').oninput = function() {
+    g_lightPosZ = this.value;
+    renderAllShapes();
+  };
+  
 
 }
 
@@ -601,6 +641,12 @@ function updateCameraWithMouse(e) {
 
 // SCENE RENDERING
 function renderAllShapes() {
+
+  if (g_normalViz) {
+    gl.uniform1i(u_whichTexture, -3);
+  }
+
+
   // Check the time at the start of this function
   var startTime = performance.now();
 
@@ -638,14 +684,14 @@ function renderAllShapes() {
   gl.uniform1f(u_spotCosine, g_spotCosine);
 
   // Normal Visualization uses u_whichTexture = -3
-  if (g_normalViz) {
-    gl.uniform1i(u_whichTexture, -3);
-  } else {
-    // otherwise pick real texture or color
-    // e.g. -2 => solid color, or 0 => first texture
-    // up to your object code
-    gl.uniform1i(u_whichTexture, 0);
-  }
+  // if (g_normalViz) {
+  //   gl.uniform1i(u_whichTexture, -3);
+  // } else {
+  //   // otherwise pick real texture or color
+  //   // e.g. -2 => solid color, or 0 => first texture
+  //   // up to your object code
+  //   gl.uniform1i(u_whichTexture, 0);
+  // }
 
   // WORLD RENDERING
   // Draw ground plane
@@ -661,7 +707,7 @@ function renderAllShapes() {
   var sky = new Cube();
   sky.isSky = true;
   sky.color = [0.5, 0.7, 1.0, 1.0]; // Blue color
-  sky.textureNum = -2; // Use solid color
+  sky.textureNum = -2;
   sky.matrix.scale(50, 50, 50);
   sky.matrix.translate(-0.5, -0.5, -0.5);
   sky.render();
@@ -688,8 +734,8 @@ function renderAllShapes() {
   let l = new Cube();
   l.color = [1,1,0,1];
   l.textureNum = -2;
-  l.matrix.translate(g_lightPosX,g_lightPosY,g_lightPosZ);
   l.matrix.scale(0.1,0.1,0.1);
+  l.matrix.translate(g_lightPosX,g_lightPosY,g_lightPosZ);
   l.render();
 
 
@@ -978,6 +1024,25 @@ function tick() {
 
 function updateAnimation() {
   if (g_animation) {
+
+      // Light position
+      let radius = 10;
+      g_lightPosX = radius * Math.cos(g_seconds);
+      g_lightPosZ = radius * Math.sin(g_seconds);
+      //g_lightPosY = 50;
+
+
+      let r = 0.5 + 0.5 * Math.sin(g_seconds * 2.0);
+      let g = 0.5 + 0.5 * Math.sin(g_seconds * 2.0 + 2.094);  // ~120° offset
+      let b = 0.5 + 0.5 * Math.sin(g_seconds * 2.0 + 4.188);  // ~240° offset
+      g_lightColor[0] = r;
+      g_lightColor[1] = g;
+      g_lightColor[2] = b;
+
+      document.getElementById('lightColorR').value = r.toFixed(2);
+      document.getElementById('lightColorG').value = g.toFixed(2);
+      document.getElementById('lightColorB').value = b.toFixed(2);
+
       let speed = 7;
       let motion = Math.sin(g_seconds * speed);
 
