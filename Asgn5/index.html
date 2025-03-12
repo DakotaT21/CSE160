@@ -1,29 +1,370 @@
 <!DOCTYPE html>
-
-<script type="module">
-    import * as THREE from 'three';
-</script>
-
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <title>Three.js Demo</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js Field with Pig Model</title>
     <style>
-      /* Remove default body margin/padding to make canvas fullscreen */
-      body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-      }
+      body { margin: 0; overflow: hidden; }
+      canvas { display: block; }
     </style>
+    <!-- Import map to resolve module specifiers -->
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.149.0/examples/jsm/"
+        }
+      }
+    </script>
   </head>
   <body>
-    <!-- Load Three.js and other necessary libraries from local files -->
-    <script src="libs/three.min.js"></script>
-    <script src="libs/OrbitControls.js"></script>
-    <script src="libs/OBJLoader.js"></script>
+    <!-- Canvas element -->
+    <canvas id="c"></canvas>
+    
+    <script type="module">
+      import * as THREE from 'three';
+      import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+      import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+      import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
 
-    <!-- Main application script -->
-    <script src="scripts/main.js"></script>
+
+      // === Scene Setup ===
+      const scene = new THREE.Scene();
+      // Add fog for extra effect (Extra Part 3)
+      scene.fog = new THREE.Fog(0xcce0ff, 10, 50);
+
+      const camera = new THREE.PerspectiveCamera(
+        75, window.innerWidth / window.innerHeight, 0.1, 1000
+      );
+      camera.position.set(0, 5, 15);
+
+      // Renderer with antialiasing and shadows enabled.
+      const canvas = document.querySelector('#c');
+      const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      document.body.appendChild(renderer.domElement);
+
+      // === OrbitControls for camera movement ===
+      const controls = new OrbitControls(camera, renderer.domElement);
+      controls.target.set(0, 1, 0);
+      controls.update();
+
+      // === Lights: Ambient, Directional, and Point ===
+      const ambientLight = new THREE.AmbientLight(0x404040, 1);
+      scene.add(ambientLight);
+
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+      directionalLight.position.set(-10, 10, 10);
+      directionalLight.castShadow = true;
+      directionalLight.shadow.mapSize.set(1024, 1024);
+      scene.add(directionalLight);
+
+      const pointLight = new THREE.PointLight(0xffddcc, 0.8, 30);
+      pointLight.position.set(0, 5, 5);
+      pointLight.castShadow = true;
+      scene.add(pointLight);
+
+      // === Ground (Field) with Grass Texture (Textured primary shape) ===
+      const groundTexture = new THREE.TextureLoader().load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
+      groundTexture.wrapS = THREE.RepeatWrapping;
+      groundTexture.wrapT = THREE.RepeatWrapping;
+      groundTexture.repeat.set(10, 10);
+      const groundMaterial = new THREE.MeshStandardMaterial({ map: groundTexture });
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 100), groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.receiveShadow = true;
+      scene.add(ground);
+
+      // === Primary Shapes ===
+      // 1. Rotating Cube (Animated)
+      const cubeGeometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
+      const cubeMaterial = new THREE.MeshPhongMaterial({ color: 0xff0000 });
+      const cube = new THREE.Mesh(cubeGeometry, cubeMaterial);
+      cube.position.set(-5, 1, 15);
+      cube.castShadow = true;
+      scene.add(cube);
+
+      // 2. Sphere
+      const sphereGeometry = new THREE.SphereGeometry(1, 32, 16);
+      const sphereMaterial = new THREE.MeshPhongMaterial({ color: 0x00ff00 });
+      const sphere = new THREE.Mesh(sphereGeometry, sphereMaterial);
+      sphere.position.set(0, 1, 18);
+      sphere.castShadow = true;
+      scene.add(sphere);
+
+      // 3. Cylinder
+      const cylinderGeometry = new THREE.CylinderGeometry(0.8, 0.8, 2, 32);
+      const cylinderMaterial = new THREE.MeshPhongMaterial({ color: 0x0000ff });
+      const cylinder = new THREE.Mesh(cylinderGeometry, cylinderMaterial);
+      cylinder.position.set(5, 1, 15);
+      cylinder.castShadow = true;
+      scene.add(cylinder);
+
+      // === Generate Corn Stalks Across the Entire Field ===
+      const numStalks = 100; // Increase to populate the field more
+
+      for (let i = 0; i < numStalks; i++) {
+          const stalkGroup = new THREE.Group(); // Group each corn stalk for easy positioning
+
+          // === Stalk (Cylinder) ===
+          const stalkHeight = 9; 
+          const stalkGeometry = new THREE.CylinderGeometry(0.2, 0.2, stalkHeight, 16);
+          const stalkMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Green
+          const stalk = new THREE.Mesh(stalkGeometry, stalkMaterial);
+          stalk.position.set(0, 1.5, 0); // Centered height
+          stalk.castShadow = true;
+          //stalk.receiveShadow = true;
+          stalkGroup.add(stalk);
+
+          // === Corn Cob (Sphere) ===
+          const cobGeometry = new THREE.SphereGeometry(0.4, 16, 16);
+          const cobMaterial = new THREE.MeshStandardMaterial({ color: 0xffcc00 }); // Yellow
+          const cob = new THREE.Mesh(cobGeometry, cobMaterial);
+          cob.scale.set(1, 2, 1); 
+          cob.position.set(0, 6, 0); // Positioned at the top of the stalk
+          cob.castShadow = true;
+          stalkGroup.add(cob);
+
+          // === Corn Leaves (Cubes) ===
+          for (let j = -1; j <= 1; j += 2) {
+              const leafGeometry = new THREE.BoxGeometry(0.8, 0.05, 0.3);
+              const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 }); // Green
+              const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+              leaf.position.set(j * 0.4, 5.5, 0); // Positioned along the stalk
+              leaf.rotation.z = j * Math.PI / 6; // Angled outward
+              leaf.castShadow = true;
+              stalkGroup.add(leaf);
+          }
+          // === Additional Random Leaves (5 Extra, at any angle around the stalk) ===
+          for (let j = 0; j < 5; j++) {
+            // Create a group so we can control the leaf’s pivot.
+            const leafGroup = new THREE.Group();
+            
+            // Random height along the stalk (between 2 and stalkHeight - 1)
+            const height = Math.random() * (stalkHeight - 6) + 2;
+            // Random angle (0 to 360°) for placement around the stalk
+            const angle = Math.random() * Math.PI * 2;
+            
+            // Stalk radius is 0.2, so place the leaf group right on the stalk's surface.
+            const stalkRadius = 0.2;
+            leafGroup.position.set(Math.cos(angle) * stalkRadius, height, Math.sin(angle) * stalkRadius);
+            
+            // Rotate the group so that the leaf faces outward
+            leafGroup.rotation.y = angle;
+            
+            // Create a flat leaf: translate its geometry so its left edge is at the origin.
+            const leafGeometry = new THREE.BoxGeometry(1, 0.05, 0.3); // width, height, depth
+            leafGeometry.translate(0.5, 0, 0); // shift so that the left edge (x=0) is at the pivot
+            
+            const leafMaterial = new THREE.MeshStandardMaterial({ color: 0x228B22 });
+            const leaf = new THREE.Mesh(leafGeometry, leafMaterial);
+            leaf.castShadow = true;
+            
+            // Optionally, add a slight upward curve
+            leaf.rotation.z = Math.PI / 8;
+            
+            // Add the leaf to its group, then add the group to the stalk group.
+            leafGroup.add(leaf);
+            stalkGroup.add(leafGroup);
+          }
+
+          // === Randomize Position in the 100x100 Field ===
+          let posX, posZ;
+          do {
+              posX = (Math.random() - 0.5) * 80; // Spread across 100x100
+              posZ = (Math.random() - 0.5) * 80;
+          } while (Math.abs(posX) < 5 && Math.abs(posZ) < 20); // Avoid camera & pig center
+
+          stalkGroup.position.set(posX, 0, posZ); // Place on ground
+
+          scene.add(stalkGroup);
+      }
+
+
+      function createPig(scene, size = 1, position = { x: 0, y: 0, z: 0 }, rotateY = 0) {
+        const pig = new THREE.Group();
+        
+        // === BODY ===
+        const bodyGeometry = new THREE.BoxGeometry(size * 1.2, size * 0.8, size * 2);
+        const bodyMaterial = new THREE.MeshStandardMaterial({ color: 0xffc0cb });
+        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+        body.position.set(0, size * 0.4, 0);
+        body.castShadow = true;
+        pig.add(body);
+    
+        // === HEAD ===
+        const headGeometry = new THREE.BoxGeometry(size * 0.8, size * 0.7, size * 0.8);
+        const head = new THREE.Mesh(headGeometry, bodyMaterial);
+        head.position.set(0, size * 0.55, size * 1.1);
+        head.castShadow = true;
+        pig.add(head);
+    
+        // === SNOUT ===
+        const snoutGeometry = new THREE.BoxGeometry(size * 0.3, size * 0.2, size * 0.3);
+        const snoutMaterial = new THREE.MeshStandardMaterial({ color: 0xff99aa });
+        const snout = new THREE.Mesh(snoutGeometry, snoutMaterial);
+        snout.position.set(0, size * 0.55, size * 1.5);
+        snout.castShadow = true;
+        pig.add(snout);
+    
+        // === NOSTRILS ===
+        for (let i = -1; i <= 1; i += 2) {
+            const nostrilGeometry = new THREE.BoxGeometry(size * 0.05, size * 0.1, size * 0.025);
+            const nostril = new THREE.Mesh(nostrilGeometry, new THREE.MeshStandardMaterial({ color: 0x990000 }));
+            nostril.position.set(i * size * 0.07, size * 0.55, size * 1.65);
+            pig.add(nostril);
+        }
+    
+        // === EYES ===
+        for (let i = -1; i <= 1; i += 2) {
+            const eyeGeometry = new THREE.BoxGeometry(size * 0.1, size * 0.15, size * 0.05);
+            const eye = new THREE.Mesh(eyeGeometry, new THREE.MeshStandardMaterial({ color: 0x000000 }));
+            eye.position.set(i * size * 0.2, size * 0.7, size * 1.5);
+            pig.add(eye);
+        }
+    
+        // === EARS ===
+        for (let i = -1; i <= 1; i += 2) {
+            const earGeometry = new THREE.BoxGeometry(size * 0.2, size * 0.2, size * 0.1);
+            const ear = new THREE.Mesh(earGeometry, bodyMaterial);
+            ear.position.set(i * size * 0.3, size * 1, size * 1);
+            pig.add(ear);
+        }
+    
+        // === LEGS ===
+        for (let i = -1; i <= 1; i += 2) {
+            for (let j = -1; j <= 1; j += 2) {
+                const legGeometry = new THREE.BoxGeometry(size * 0.25, size * 0.6, size * 0.25);
+                const leg = new THREE.Mesh(legGeometry, snoutMaterial);
+                leg.position.set(i * size * 0.4, size * -0.2, j * size * 0.75);
+                leg.castShadow = true;
+                pig.add(leg);
+            }
+        }
+    
+        // === TAIL ===
+        const tailGeometry = new THREE.BoxGeometry(size * 0.1, size * 0.1, size * 0.5);
+        const tail = new THREE.Mesh(tailGeometry, snoutMaterial);
+        tail.position.set(0, size * 0.6, -size * 1.1);
+        tail.rotation.z = Math.PI / 4;
+        pig.add(tail);
+    
+        // Set pig position and rotation
+        pig.position.set(position.x, position.y, position.z);
+        pig.rotation.y = rotateY;
+    
+        // Add pig to the scene
+        scene.add(pig);
+        return pig;
+      }
+
+      const pig = createPig(scene, 2, { x: 0, y: 1, z: 5 });
+
+    
+
+      
+      // === Load Pig OBJ Model ===
+      const mtlLoader = new MTLLoader();
+      mtlLoader.setResourcePath('obj/');  // Ensure textures load correctly
+      mtlLoader.load('obj/Mesh_Pig.mtl', (materials) => {
+        materials.preload();
+
+        const objLoader = new OBJLoader();
+        objLoader.setMaterials(materials);
+        objLoader.load(
+          'obj/Mesh_Pig.obj',
+          (object) => {
+            object.position.set(0, 2.2, -12);
+            object.scale.set(0.04, 0.04, 0.04);
+
+            object.traverse((node) => {
+              if (node.isMesh) {
+                node.castShadow = true;
+                node.receiveShadow = true;
+                node.material.side = THREE.DoubleSide;
+
+                // **Manually apply the texture if missing**
+                if (!node.material.map) {
+                  const textureLoader = new THREE.TextureLoader();
+                  const texture = textureLoader.load('obj/Tex_Pig.png');
+                  node.material = new THREE.MeshStandardMaterial({
+                    map: texture,
+                  });
+                }
+              }
+            });
+
+            scene.add(object);
+          },
+        );
+      });
+
+      // === Skybox ===
+      // Load a cube texture for the skybox. Replace the paths with your own skybox image URLs.
+      const skyboxLoader = new THREE.CubeTextureLoader();
+      const skyTexture = skyboxLoader.load([
+        'textures/px.png',  // +X
+        'textures/nx.png',  // -X
+        'textures/py.png',  // +Y
+        'textures/ny.png',  // -Y
+        'textures/pz.png',  // +Z
+        'textures/nz.png'   // -Z
+      ]);
+      scene.background = skyTexture;
+
+      // === Object Picking (Click to Toggle Highlight) ===
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+      
+      window.addEventListener('click', (event) => {
+        // Convert mouse coordinates to normalized device coordinates (-1 to +1).
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+        
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(scene.children, true);
+        if (intersects.length > 0) {
+          const obj = intersects[0].object;
+          // Toggle highlight only if material has an emissive property.
+          if (obj.material && 'emissive' in obj.material) {
+            // Store original emissive color if not already stored.
+            if (!obj.material.userData.originalEmissive) {
+              obj.material.userData.originalEmissive = obj.material.emissive.clone();
+            }
+            const highlightColor = new THREE.Color(0x4444ff);
+            // If currently highlighted, revert; otherwise, highlight.
+            if (obj.material.emissive.equals(highlightColor)) {
+              obj.material.emissive.copy(obj.material.userData.originalEmissive);
+            } else {
+              obj.material.emissive.copy(highlightColor);
+            }
+          }
+        }
+      });
+
+      // === Animation Loop ===
+      function animate(time) {
+        time *= 0.001; // Convert time to seconds.
+        
+        // Animate the cube (Extra: animated shape)
+        cube.rotation.x = time;
+        cube.rotation.y = time;
+        
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+      }
+      requestAnimationFrame(animate);
+
+      // === Handle Window Resizing ===
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    </script>
   </body>
 </html>
